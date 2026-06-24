@@ -1,0 +1,69 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Session {
+  id              String     @id @default(uuid())
+  repoPath        String
+  task            String
+  status          String     @default("running")
+  model           String
+  totalTokens     Int        @default(0)
+  totalCostUsd    Float      @default(0)
+  toolCallsCount  Int        @default(0)
+  durationSeconds Int?
+  createdAt       DateTime   @default(now())
+  completedAt     DateTime?
+  toolCalls       ToolCall[]
+}
+
+model ToolCall {
+  id         String   @id @default(uuid())
+  sessionId  String
+  toolName   String
+  input      Json
+  output     Json?
+  success    Boolean?
+  durationMs Int?
+  calledAt   DateTime @default(now())
+  session    Session  @relation(fields: [sessionId], references: [id])
+}
+
+model Chunk {
+  id         String   @id @default(uuid())
+  repoPath   String
+  filePath   String
+  startLine  Int
+  endLine    Int
+  content    String
+  language   String?
+  chunkType  String?
+  symbolName String?
+  createdAt  DateTime @default(now())
+
+  // pgvector — Prisma doesn't support Vector natively yet
+  // handled via $executeRaw for embedding column
+  // see embedder.ts
+}
+
+model Prompt {
+  id        String   @id @default(uuid())
+  name      String
+  version   Int
+  content   String
+  evalScore Float?
+  deployed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([name, version])
+}
